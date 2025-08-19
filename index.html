@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Label Grid with Micro QR Codes</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .controls { margin: 20px 30px 0 30px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 12px;
+      margin: 30px;
+    }
+    .label {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      background: #fff;
+      width: 100px;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      page-break-inside: avoid;
+    }
+    .code { margin-bottom: 6px; }
+    .text {
+      font-size: 1.2em;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    @media print {
+      body { background: #fff; }
+      .controls, h2 { display: none; }
+      .grid { margin: 0; gap: 6px; }
+      .label { border: none; width: 90px; height: 110px; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Label Grid (130 labels)</h2>
+  <div class="controls">
+    <button onclick="window.print()">Print Labels</button>
+    <button id="csvBtn">Export CSV</button>
+    <label>
+      Columns:
+      <input type="number" id="colInput" min="1" max="20" value="10" style="width:40px;">
+    </label>
+    <span style="margin-left:20px; color:#555;">
+      Each label shows a Micro QR code and its 2-character code.<br>
+      First char: A, B, C, D, or space. Second char: A-Z.
+    </span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <script>
+    // Generate all possible 2-char codes
+    const firstChars = ['A', 'B', 'C', 'D', ' '];
+    const secondChars = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i));
+    const codes = [];
+    for (let f of firstChars) {
+      for (let s of secondChars) {
+        codes.push(f + s);
+      }
+    }
+    // Only use first 130 codes
+    const labelCodes = codes.slice(0, 130);
+
+    function renderGrid(columns) {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+      labelCodes.forEach(code => {
+        // Create Micro QR code
+        const qr = qrcode(1, 'L');
+        qr.addData(code);
+        qr.make();
+        const qrImg = document.createElement('div');
+        qrImg.className = 'code';
+        qrImg.innerHTML = qr.createImgTag(3, 0);
+
+        // Label container
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'label';
+        labelDiv.appendChild(qrImg);
+
+        // Text
+        const textDiv = document.createElement('div');
+        textDiv.className = 'text';
+        textDiv.textContent = code;
+        labelDiv.appendChild(textDiv);
+
+        grid.appendChild(labelDiv);
+      });
+    }
+
+    // Initial render
+    renderGrid(10);
+
+    // Handle columns input
+    document.getElementById('colInput').addEventListener('input', e => {
+      const cols = Math.max(1, Math.min(20, parseInt(e.target.value) || 10));
+      renderGrid(cols);
+    });
+
+    // Export CSV
+    document.getElementById('csvBtn').onclick = function() {
+      let csv = 'Code\n' + labelCodes.join('\n');
+      const blob = new Blob([csv], {type: 'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'labels.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+  </script>
+</body>
+</html>
