@@ -9,7 +9,7 @@
     .controls { margin: 20px 30px 0 30px; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(10, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 12px;
       margin: 30px;
     }
@@ -47,13 +47,14 @@
     <button id="csvBtn">Export CSV</button>
     <label>
       Columns:
-      <input type="number" id="colInput" min="1" max="20" value="10" style="width:40px;">
+      <input type="number" id="colInput" min="1" max="20" value="6" style="width:40px;">
     </label>
     <span style="margin-left:20px; color:#555;">
       Each label shows a Micro QR code and its 2-character code.<br>
       First char: A, B, C, D, or space. Second char: A-Z.
     </span>
   </div>
+  <div>These are pretty small by default; zoom your browser (and change the number of columns) to suit your use-case.</div>
   <div class="grid" id="grid"></div>
   <script>
     // Generate all possible 2-char codes
