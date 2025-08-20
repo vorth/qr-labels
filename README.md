@@ -4,6 +4,8 @@ This web app generates a printable grid of 130 labels, each with a unique 2-char
 The first character is one of: `A`, `B`, `C`, `D`, or space.  
 The second character is any uppercase letter `A-Z`.
 
+This app was vibe-coded with GitHub Copilot using GPT 4.1.  I've captured some potential improvements as issues.
+
 ## Features
 
 - **Print-friendly layout:** Click "Print Labels" to print the grid.
