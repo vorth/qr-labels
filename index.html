@@ -2,123 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Label Grid with Micro QR Codes</title>
+  <title>QR Labels</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; }
-    .controls { margin: 20px 30px 0 30px; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-      margin: 30px;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page {
+      size: 8.5in 11in;
+      margin: 0;
     }
+
+    body {
+      background: white;
+    }
+
+    .sheet {
+      width: 8.5in;
+      height: 11in;
+      padding: 0.5in 0.1875in;
+      display: grid;
+      /* 9 label cols with 0.125in gutters between groups of 3 */
+      grid-template-columns: repeat(3, 1fr) 0.125in repeat(3, 1fr) 0.125in repeat(3, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      break-after: page;
+    }
+
     .label {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-      background: #fff;
-      width: 100px;
-      height: 120px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      page-break-inside: avoid;
+      overflow: hidden;
     }
-    .code { margin-bottom: 6px; }
+
+    .label img {
+      width: 72%;
+      height: auto;
+      display: block;
+    }
+
     .text {
-      font-size: 1.2em;
+      font-family: Arial, sans-serif;
+      font-size: 10.5pt;
       font-weight: bold;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
+      margin-top: 1px;
     }
-    @media print {
-      body { background: #fff; }
-      .controls, h2 { display: none; }
-      .grid { margin: 0; gap: 6px; }
-      .label { border: none; width: 90px; height: 110px; }
+
+    @media screen {
+      body { background: #e0e0e0; padding: 0.5in; display: flex; flex-direction: column; gap: 0.5in; align-items: flex-start; }
+      .sheet { box-shadow: 0 0 8px rgba(0,0,0,0.3); }
+      .label { border: 1px solid #ddd; }
     }
   </style>
 </head>
 <body>
-  <h2>Label Grid (130 labels)</h2>
-  <div class="controls">
-    <button onclick="window.print()">Print Labels</button>
-    <button id="csvBtn">Export CSV</button>
-    <label>
-      Columns:
-      <input type="number" id="colInput" min="1" max="20" value="6" style="width:40px;">
-    </label>
-    <span style="margin-left:20px; color:#555;">
-      Each label shows a Micro QR code and its 2-character code.<br>
-      First char: A, B, C, D, or space. Second char: A-Z.
-    </span>
-  </div>
-  <div>These are pretty small by default; zoom your browser (and change the number of columns) to suit your use-case.</div>
-  <div class="grid" id="grid"></div>
   <script>
-    // Generate all possible 2-char codes
-    const firstChars = ['E', 'F', 'G',];
+    const firstChars = ['Q', 'R', 'S', 'T', ];
     const secondChars = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i));
     const codes = [];
-    for (let f of firstChars) {
-      for (let s of secondChars) {
+    for (const f of firstChars)
+      for (const s of secondChars)
         codes.push(f + s);
+
+    const LABELS_PER_SHEET = 90; // 9 cols × 10 rows
+
+    function renderSheet(slice) {
+      const sheet = document.createElement('div');
+      sheet.className = 'sheet';
+      let idx = 0;
+      for (let row = 0; row < 10; row++) {
+        for (let group = 0; group < 3; group++) {
+          for (let col = 0; col < 3; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'label';
+            if (idx < slice.length) {
+              const code = slice[idx];
+              const qr = qrcode(1, 'L');
+              qr.addData(code);
+              qr.make();
+              cell.innerHTML = qr.createImgTag(4, 0);
+              const text = document.createElement('div');
+              text.className = 'text';
+              text.textContent = code;
+              cell.appendChild(text);
+            }
+            idx++;
+            sheet.appendChild(cell);
+          }
+          // gutter column between groups 0→1 and 1→2
+          if (group < 2) sheet.appendChild(document.createElement('div'));
+        }
       }
-    }
-    // Only use first 130 codes
-    const labelCodes = codes.slice(0, 130);
-
-    function renderGrid(columns) {
-      const grid = document.getElementById('grid');
-      grid.innerHTML = '';
-      grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-      labelCodes.forEach(code => {
-        // Create Micro QR code
-        const qr = qrcode(1, 'L');
-        qr.addData(code);
-        qr.make();
-        const qrImg = document.createElement('div');
-        qrImg.className = 'code';
-        qrImg.innerHTML = qr.createImgTag(3, 0);
-
-        // Label container
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'label';
-        labelDiv.appendChild(qrImg);
-
-        // Text
-        const textDiv = document.createElement('div');
-        textDiv.className = 'text';
-        textDiv.textContent = code;
-        labelDiv.appendChild(textDiv);
-
-        grid.appendChild(labelDiv);
-      });
+      return sheet;
     }
 
-    // Initial render
-    renderGrid(10);
-
-    // Handle columns input
-    document.getElementById('colInput').addEventListener('input', e => {
-      const cols = Math.max(1, Math.min(20, parseInt(e.target.value) || 10));
-      renderGrid(cols);
-    });
-
-    // Export CSV
-    document.getElementById('csvBtn').onclick = function() {
-      let csv = 'Code\n' + labelCodes.join('\n');
-      const blob = new Blob([csv], {type: 'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'labels.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    };
+    for (let i = 0; i < codes.length; i += LABELS_PER_SHEET)
+      document.body.appendChild(renderSheet(codes.slice(i, i + LABELS_PER_SHEET)));
   </script>
 </body>
 </html>
